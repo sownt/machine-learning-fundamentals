@@ -24,10 +24,10 @@ PATH=string(@__DIR__) * "/dataset/"
 	 * INPUT: Path of file
 	 * OUTPUT: Features matrix X and Diagnostic Result vector y
 """
-function readData(path)
-	buff = readdlm(path, ',')
-	X = buff[:, 3:end] # lấy dữ liệu từ cột 3 đến hết (các đặc trưng)
-	y = Int.(buff[:,2]) .+ 1 # lấy kết quả chuẩn đoán, chuẩn hóa từ (0, 1) -> (1, 2)
+function readData(filename)
+	buff = readdlm(PATH * filename, ',') # read data from filename in PATH, separated by comma
+	X = buff[:, 3:end] # get data from column 3 to the end (features)
+	y = Int.(buff[:,2]) .+ 1 # get diagnostic results, normalize from (0, 1) -> (1, 2)
 	return (X, y)
 end
 
@@ -38,12 +38,12 @@ md"""
 
 # ╔═╡ 4e675417-d803-4e88-aa10-02781a16d441
 """
-	INPUT: Training data (X, y). X is a matrix of shape N x (D+1), y is a column vector of length N.
+	INPUT: Training data (X, y). X is a matrix of shape N x (D + 1), y is a column vector of length N.
 	OUTPUT: Tuple (μ, σ, θ).
 """
 function train(X, y)
-	K = length(unique(y)) # Số giá trị đặc trưng của x (trong trường hợp này =2)
-	N, D = size(X)
+	K = length(unique(y)) # number of characteristic values of x (in this case = 2)
+	N, D = size(X) # get the number of tuples (N) and the number of features (D) of each tuple
 	μ = zeros(D, K)
 	σ = zeros(D, K)
 	θ = zeros(K)
@@ -57,11 +57,11 @@ function train(X, y)
 end
 
 # ╔═╡ d24cadfa-80dc-4352-bf75-7c922d945dec
+"""
+	INPUT: Test Data xNew
+	OUTPUT: Result of type prediction of xNew
+"""
 function classify(μ, σ, θ, xNew)
-	# TODO
-	# P(yNew = 1 | xNew) = ? 0.8
-	# P(yNew = 2 | xNew) = ? 0.2
-
 	D, K = size(μ)
 	scores = zeros(K)
 	for k=1:K
@@ -72,10 +72,13 @@ function classify(μ, σ, θ, xNew)
 		scores[k] = log(θ[k]) + s
 	end
 
-	return argmax(scores) # yNew
+	return argmax(scores)
 end
 
 # ╔═╡ ce7671c3-a69d-4585-92fc-6df80b3ad135
+"""
+	Check the fit of the model with the actual result
+"""
 function evaluate(μ, σ, θ, X, y)
 	N = length(y)
 	z = map(i -> classify(μ, σ, θ, X[i, :]), 1:N)
@@ -88,37 +91,42 @@ md"""
 """
 
 # ╔═╡ 850b363c-9e09-4d9e-a894-edad8c9280b6
-# Đọc dữ liệu vào, bỏ cột đầu (ID number): X là các đặc trưng (cột 3 - 32), y là chuẩn đoán [1, 2] với 1 là ác tính (malignant), 2 là lành tính (benign)
-X, y = readData(PATH * "wdbc.txt")
+# Read input data, remove the first column (ID number): X is the features
+# (columns 3 - 32), y is diagnosis [1, 2] with 1 being malignant (malignant),
+# 2 being benign (benign)
+X, y = readData("wdbc.txt")
 
 # ╔═╡ cf88e8c7-e8ce-4bde-b12a-748f59beae53
-# Lấy ra chỉ số các hàng có y = 1 (ác tính)
+# Get the index of rows with y = 1 (malignant)
 id1 = (y .== 1)
 
 # ╔═╡ 4c5f799d-f614-4bd3-805d-1ca7cfca5d72
-# Lấy ra các hàng có y = 1 (ác tính)
+# Retrieve rows with y = 1 (malignant)
 X_m = X[id1, :]
 
 # ╔═╡ cdffb051-49be-4f78-8f74-e7087ac3519b
-# Lấy ra chỉ số các hàng có y = 2 (lành tính)
+# Get the index of rows with y = 2 (benign)
 id2 = (y .== 2)
 
 # ╔═╡ 02d99408-d2e4-4d03-86c9-fe654de0a8c6
-# Lấy ra các hàng có y = 2 (lành tính)
+# Retrieve rows with y = 2 (benign)
 X_b = X[id2, :]
 
 # ╔═╡ 63e318e9-76c3-439b-b407-2d8c2f51cdf2
-# Duỗi ma trận X_b thành vecto, tính trung bình các đặc trưng trên dữ liệu lành tính
+# Stretch matrix X_b to vector, average features on benign data
 vec(mean(X_b, dims=1))
 
 # ╔═╡ db0cdf5e-d687-4d0a-ab6d-03dcc8269920
+# Model training
 μ, σ, θ = train(X, y)
 
 # ╔═╡ 424215bd-b3bc-4cf0-b048-fa7a57280c5b
-classify(μ, σ, θ, X[100,:]) # Thử trên mô hình thu được với phần tử X thứ 100
+# Try on the model obtained with the 100th element X
+classify(μ, σ, θ, X[100,:])
 
 # ╔═╡ a361034d-9b54-4e30-8542-7e4e9e0caec9
-evaluate(μ, σ, θ, X, y) # Tính độ chính xác của mô hình
+# Evaluate the accuracy of the model
+evaluate(μ, σ, θ, X, y)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
